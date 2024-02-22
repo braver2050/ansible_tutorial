@@ -20,100 +20,25 @@
 
 - hosts: all
   become: true
-  tasks:
-
-  - name: add ssh key for simone
-    tags: always
-    authorized_key:
-      user: simone
-      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPw+RwbTth0xa49RsIJxlsvmt1MOqjdOQwfj+sxH/sNE ansible default"
+  roles:
+    - base
 
 - hosts: workstations
   become: true
-  tasks:
-
-  - name:  install unzip
-    package:
-      name: unzip
-
-  - name: install terraform
-    unarchive:
-      src: https://releases.hashicorp.com/terraform/0.12.28/terraform_0.12.28_linux_amd64.zip
-      dest: /usr/local/bin
-      remote_src: yes
-      mode: 0755
-      owner: root
-      group: root
+  roles:
+    - workstations
 
 - hosts: web_servers
   become: true
-  tasks:
-
-  - name: install apache and php for Ubuntu servers
-    tags: apache,apache2,ubuntu
-    apt:
-      name:
-        - apache2
-        - libapache2-mod-php
-      state: latest
-    when: ansible_distribution in ["Ubuntu"]
-
-  - name: install apache and php for CentOS servers
-    tags: apache,centos,httpd
-    dnf:
-      name:
-        - httpd
-        - php
-      state: latest
-    when: ansible_distribution in ["CentOS"]
-  
-  - name: start httpd (CentOS)
-    tags: apache,centos,httpd
-    service:
-      name: httpd
-      state: started # start the service via ansible
-      enabled: yes # make the service start when the device restarts
-    when:  ansible_distribution == "CentOS"
-  
-  - name: change e-mail address for admin
-    tags: apache,centos,httpd
-    lineinfile: 
-      path: /etc/httpd/conf/httpd.conf
-      regexp: '^ServerAdmin'
-      line: ServerAdmin somebody@somehwere.net
-    when: ansible_distribution in ["CentOS"] 
-    register: httpd # capture state in variable name
-   
-  - name: restart httpd (CentOS)
-    tags: apache,centos,httpd
-    service:
-      name: httpd
-      state: restarted
-    when: httpd.changed # only restart when this httpd variable has changed
-
-  - name: copy default html file for site
-    tags: apache,apache2,httpd
-    copy:
-      src: default_site.html
-      dest: /var/www/html/index.html
-      owner: root
-      group: root
-      mode: 0644
+  roles:
+    - web_servers
 
 - hosts: db_servers
   become: true
-  tasks:
+  roles:
+    - db_servers
 
-  - name: install mariadb package for Centos servers
-    tags: centos,db,mariadb
-    dnf:
-      name: mariadb
-      state: latest
-    when: ansible_distribution in ["CentOS"]
-
-  - name: install mariadb for Ubuntu servers
-    tags: db,mariadb,ubuntu
-    apt:
-      name: mariadb-server
-      state: latest
-    when: ansible_distribution == "Ubuntu"
+- hosts: file_servers
+  become: true
+  roles:
+    - file_servers
